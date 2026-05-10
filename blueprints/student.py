@@ -43,7 +43,13 @@ def dashboard():
 def available_courses():
     sid = session['entity_id']
 
-    # Fixed: use course_sections for seats, faculty, and section info
+    # ── UI-layer Rule 1 filter ──────────────────────────────────────────────
+    # Hide ALL sections of any course the student is already actively enrolled
+    # in during the same semester — not just the exact section they're in.
+    # This prevents the UI from offering CS-101-B when the student is already
+    # in CS-101-A.  The DB trigger (trg_enrollment_no_duplicate_course_in_semester)
+    # is the authoritative guard; this is a UX improvement on top of it.
+    # ────────────────────────────────────────────────────────────────────────
     courses = execute_query(
         """SELECT cs.section_id, c.course_code, c.course_name, c.credit_hours,
                   cs.section_code, sm.name AS semester_name,
@@ -51,13 +57,19 @@ def available_courses():
                   cs.max_capacity - COUNT(e.enrollment_id) AS seats_left
            FROM course_sections cs
            JOIN courses c ON cs.course_id = c.course_id
-           JOIN semesters sm ON cs.semester_id = sm.semester_id
+           JOIN semesters sm ON cs.semester_id = sm.semester_id AND sm.is_active = TRUE
            LEFT JOIN faculty f ON cs.faculty_id = f.faculty_id
            LEFT JOIN enrollments e ON cs.section_id = e.section_id AND e.status='active'
-           WHERE cs.section_id NOT IN (
-               SELECT section_id FROM enrollments
-               WHERE student_id=%s AND status='active'
-           )
+           WHERE
+               -- Rule 1: exclude sections of courses already taken this semester
+               cs.course_id NOT IN (
+                   SELECT cs2.course_id
+                   FROM enrollments e2
+                   JOIN course_sections cs2 ON e2.section_id = cs2.section_id
+                   WHERE e2.student_id = %s
+                     AND e2.status = 'active'
+                     AND cs2.semester_id = sm.semester_id
+               )
            GROUP BY cs.section_id, c.course_code, c.course_name, c.credit_hours,
                     cs.section_code, sm.name, f.first_name, f.last_name, cs.max_capacity
            HAVING seats_left > 0""",
@@ -71,8 +83,48 @@ def available_courses():
 def enroll(section_id):
     sid = session['entity_id']
 
+    # ── Python pre-flight checks (application layer) ─────────────────────────
+    # These run BEFORE the stored procedure call so the user sees a clean
+    # flash message. The DB triggers (15 & 16) are the authoritative backstop
+    # for any bypass path; these checks just improve UX responsiveness.
+
+    # Rule 1: No enrollment in another section of the same course this semester
+    conflict_row = execute_query(
+        """SELECT COUNT(*) AS cnt
+           FROM   enrollments e
+           JOIN   course_sections cs  ON e.section_id  = cs.section_id
+           JOIN   course_sections cs2 ON cs2.section_id = %s
+           WHERE  e.student_id   = %s
+             AND  e.status        = 'active'
+             AND  cs.course_id    = cs2.course_id
+             AND  cs.semester_id  = cs2.semester_id""",
+        (section_id, sid)
+    )
+    if conflict_row and conflict_row[0]['cnt'] > 0:
+        flash('You are already enrolled in another section of this course '
+              'this semester.', 'warning')
+        return redirect(url_for('student.available_courses'))
+
+    # Rule 2: Max 6 active courses per semester
+    overload_row = execute_query(
+        """SELECT COUNT(*) AS cnt
+           FROM   enrollments e
+           JOIN   course_sections cs  ON e.section_id  = cs.section_id
+           JOIN   course_sections cs2 ON cs2.section_id = %s
+           WHERE  e.student_id   = %s
+             AND  e.status        = 'active'
+             AND  cs.semester_id  = cs2.semester_id""",
+        (section_id, sid)
+    )
+    if overload_row and overload_row[0]['cnt'] >= 6:
+        flash('You have reached the maximum of 6 active courses '
+              'for this semester.', 'warning')
+        return redirect(url_for('student.available_courses'))
+    # ─────────────────────────────────────────────────────────────────────────
+
     try:
-        # Use stored procedure — handles capacity, duplicates, and grade row creation
+        # Use stored procedure — handles capacity, duplicates, both rules,
+        # and grade row creation inside a single atomic transaction.
         result = call_procedure(
             'RegisterStudentInCourse', (sid, section_id, '', 0)
         )
