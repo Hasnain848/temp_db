@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Attendance History{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Attendance History</h1>
+  <p class="page-subtitle">View past attendance records for your courses</p>
+</div>
+
+<!-- Course + Section Selector -->
+{% if courses %}
+{% set courses_json = [] %}
+{% for c in courses %}
+  {% set _ = courses_json.append({'id': c.course_id, 'code': c.course_code, 'name': c.course_name, 'section': c.section_code|default('A')}) %}
+{% endfor %}
+<div class="card card-static section-mb" style="padding: 14px 20px;">
+  <div class="course-picker form-row" style="align-items:flex-end;"
+       data-courses='{{ courses_json | tojson }}'
+       data-base-url="{{ url_for('faculty.attendance_history') }}"
+       data-selected="{{ selected_course }}">
+    <div class="form-group" style="margin-bottom:0; flex:2;">
+      <label class="form-label">Select Course</label>
+      <select class="form-input course-code-select"></select>
+    </div>
+    <div class="form-group" style="margin-bottom:0; flex:1;">
+      <label class="form-label">Section</label>
+      <select class="form-input section-select"></select>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if dates %}
+  <!-- Date-wise Summary -->
+  <div class="table-wrap section-mb">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Present</th>
+          <th>Absent</th>
+          <th>Late</th>
+          <th>Total</th>
+          <th>Attendance Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in dates %}
+        <tr>
+          <td style="font-weight:600;"><i data-lucide="calendar" style="width:16px;height:16px;"></i> {{ d.class_date.strftime('%b %d, %Y') if d.class_date else d.class_date }}</td>
+          <td><span class="badge badge-success">{{ d.present_count }}</span></td>
+          <td><span class="badge badge-danger">{{ d.absent_count }}</span></td>
+          <td><span class="badge badge-warning">{{ d.late_count }}</span></td>
+          <td>{{ d.total }}</td>
+          <td>
+            {% set rate = ((d.present_count / d.total) * 100)|round(1) if d.total else 0 %}
+            <div class="progress-info">
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" data-percentage="{{ rate }}"></div>
+              </div>
+              <span class="progress-text">{{ rate }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Individual Records -->
+  {% if records %}
+  <div class="card card-static">
+    <div class="card-header">
+      Detailed Records
+      <span class="badge badge-info">{{ records|length }}</span>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="rosterSearch" placeholder="Search by student name or date...">
+    </div>
+    <div style="overflow-x:auto;" id="rosterTable">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Student</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ r.class_date.strftime('%b %d, %Y') if r.class_date else r.class_date }}</td>
+            <td style="font-weight:600;">{{ r.first_name }} {{ r.last_name }}</td>
+            <td>
+              {% if r.status == 'present' %}
+                <span class="badge badge-success"><i data-lucide="check-circle" style="width:16px;height:16px;"></i> Present</span>
+              {% elif r.status == 'absent' %}
+                <span class="badge badge-danger">❌ Absent</span>
+              {% else %}
+                <span class="badge badge-warning">⏰ Late</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+{% else %}
+  <div class="card card-static">
+    <div class="empty-state">
+      <div class="empty-state-icon"><i data-lucide="calendar" style="width:48px;height:48px;"></i></div>
+      <h3>No attendance records</h3>
+      <p>Select a course to view attendance history. Records will appear here once attendance is marked.</p>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

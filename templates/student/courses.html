@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Available Courses{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Available Courses</h1>
+  <p class="page-subtitle">Browse and enroll in courses for the current semester</p>
+</div>
+
+{% if courses %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Course Code</th>
+          <th>Section</th>
+          <th>Course Name</th>
+          <th>Credit Hours</th>
+          <th>Semester</th>
+          <th>Faculty</th>
+          <th>Seats Available</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for course in courses %}
+        <tr>
+          <td><span class="badge badge-info">{{ course.course_code }}</span></td>
+          <td><span class="badge badge-purple" style="font-size:10px;">Sec {{ course.section_code if course.section_code else 'A' }}</span></td>
+          <td>{{ course.course_name }}</td>
+          <td>{{ course.credit_hours }}</td>
+          <td><span class="badge badge-purple">{{ course.semester_name if course.semester_name else '—' }}</span></td>
+          <td>{{ course.faculty_name if course.faculty_name else '—' }}</td>
+          <td>
+            {% if course.seats_left > 5 %}
+              <span class="badge badge-success">{{ course.seats_left }} left</span>
+            {% elif course.seats_left > 0 %}
+              <span class="badge badge-warning">{{ course.seats_left }} left</span>
+            {% else %}
+              <span class="badge badge-danger">Full</span>
+            {% endif %}
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('student.enroll', section_id=course.section_id) }}" style="display:inline;" data-confirm="Are you sure you want to enroll in {{ course.course_name }}?">
+              <button type="submit" class="btn btn-primary btn-sm"><i data-lucide="plus" style="width:14px;height:14px;"></i> Enroll</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="card card-static">
+    <div class="empty-state">
+      <div class="empty-state-icon"><i data-lucide="inbox" style="width:48px;height:48px;"></i></div>
+      <h3>No courses available</h3>
+      <p>All available courses are either full or you are already enrolled in them.</p>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

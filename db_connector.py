@@ -1,0 +1,58 @@
+import mysql.connector
+from mysql.connector import pooling, Error as MySQLError
+from config import Config
+
+connection_pool = pooling.MySQLConnectionPool(
+    pool_name    = "campus_pool",
+    pool_size    = 5,
+    host         = Config.DB_HOST,
+    port         = Config.DB_PORT,
+    user         = Config.DB_USER,
+    password     = Config.DB_PASS,
+    database     = Config.DB_NAME
+)
+
+def get_connection():
+    return connection_pool.get_connection()
+
+def execute_query(query, params=None, fetch=True, many=False):
+    """
+    fetch=True  → returns list of dicts (SELECT)
+    fetch=False → executes INSERT/UPDATE/DELETE, returns lastrowid
+    many=True   → params is a list of tuples (executemany)
+    """
+    conn   = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        if many:
+            cursor.executemany(query, params)
+        else:
+            cursor.execute(query, params or ())
+        if fetch:
+            result = cursor.fetchall()
+        else:
+            conn.commit()
+            result = cursor.lastrowid
+        return result
+    except MySQLError as e:
+        if not fetch:
+            conn.rollback()
+        raise e
+    finally:
+        cursor.close()
+        conn.close()
+
+def call_procedure(proc_name, args=()):
+    """Calls a stored procedure. Returns the modified args tuple (includes OUT params)."""
+    conn   = get_connection()
+    cursor = conn.cursor()
+    try:
+        result_args = cursor.callproc(proc_name, args)
+        conn.commit()
+        return result_args
+    except MySQLError as e:
+        conn.rollback()
+        raise e
+    finally:
+        cursor.close()
+        conn.close()

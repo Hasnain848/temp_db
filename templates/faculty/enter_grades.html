@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Enter Grades{% endblock %}
+
+{% block content %}
+<div class="flex-between section-mb">
+  <div>
+    <h1 class="page-title" style="margin-bottom:0;">
+      Enter Grades
+      <span class="unsaved-dot" id="unsavedDot" title="Unsaved changes"></span>
+    </h1>
+    <p class="page-subtitle" style="margin-bottom:0;">{{ course_name }}</p>
+  </div>
+</div>
+
+<!-- Course + Section Selector -->
+{% if courses %}
+{% set courses_json = [] %}
+{% for c in courses %}
+  {% set _ = courses_json.append({'id': c.course_id, 'code': c.course_code, 'name': c.course_name, 'section': c.section_code|default('A')}) %}
+{% endfor %}
+<div class="card card-static section-mb" style="padding: 14px 20px;">
+  <div class="course-picker form-row" style="align-items:flex-end;"
+       data-courses='{{ courses_json | tojson }}'
+       data-base-url="{{ url_for('faculty.enter_grades') }}"
+       data-selected="{{ selected_course }}">
+    <div class="form-group" style="margin-bottom:0; flex:2;">
+      <label class="form-label">Select Course</label>
+      <select class="form-input course-code-select"></select>
+    </div>
+    <div class="form-group" style="margin-bottom:0; flex:1;">
+      <label class="form-label">Section</label>
+      <select class="form-input section-select"></select>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<form method="POST" action="{{ url_for('faculty.save_grades') }}" id="gradeForm">
+  <input type="hidden" name="course_id" value="{{ course_id }}">
+
+  {% if students %}
+    <div class="table-wrap section-mb">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Student Name</th>
+            <th>Marks (0–100)</th>
+            <th>Letter Grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in students %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td style="font-weight:600;">{{ s.first_name }} {{ s.last_name }}</td>
+            <td>
+              <input type="number" class="form-input" name="marks_{{ s.enrollment_id }}"
+                     min="0" max="100" step="0.01"
+                     value="{{ s.marks if s.marks is not none else '' }}" placeholder="0–100"
+                     style="max-width: 130px;">
+            </td>
+            <td>
+              {% if s.letter_grade %}
+                {% set grade_cls = 'grade-a' if s.letter_grade in ['A', 'A-'] else ('grade-b' if s.letter_grade in ['B+', 'B', 'B-'] else ('grade-c' if s.letter_grade in ['C+', 'C'] else 'grade-f')) %}
+                <span class="grade-preview {{ grade_cls }}">{{ s.letter_grade }}</span>
+              {% else %}
+                <span class="grade-preview">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Grade Scale Reference -->
+    <div class="card card-static section-mb" style="padding: 16px 20px;">
+      <div class="card-header" style="margin-bottom:10px; padding-bottom:8px;">Grade Scale Reference</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; font-size:12px; font-weight:600;">
+        <span class="badge badge-success">A ≥ 90</span>
+        <span class="badge badge-success">A- ≥ 85</span>
+        <span class="badge badge-info">B+ ≥ 80</span>
+        <span class="badge badge-info">B ≥ 75</span>
+        <span class="badge badge-info">B- ≥ 70</span>
+        <span class="badge badge-warning">C+ ≥ 65</span>
+        <span class="badge badge-warning">C ≥ 60</span>
+        <span class="badge badge-danger">F &lt; 60</span>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="padding: 12px 32px;">
+      💾 Save Grades
+    </button>
+  {% else %}
+    <div class="card card-static">
+      <div class="empty-state">
+        <div class="empty-state-icon"><i data-lucide="edit-3" style="width:48px;height:48px;"></i></div>
+        <h3>No students enrolled</h3>
+        <p>There are no students enrolled in this course to grade.</p>
+      </div>
+    </div>
+  {% endif %}
+</form>
+{% endblock %}
