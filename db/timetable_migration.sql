@@ -1,6 +1,4 @@
--- ============================================================
--- Timetable Slots — Weekly schedule for course sections
--- ============================================================
+
 CREATE TABLE IF NOT EXISTS timetable_slots (
     slot_id      INT AUTO_INCREMENT PRIMARY KEY,
     section_id   INT NOT NULL,

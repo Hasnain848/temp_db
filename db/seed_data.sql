@@ -1,16 +1,12 @@
 USE smart_campus;
 
--- ══════════════════════════════════════════════
--- SEMESTERS (add 3 previous + keep existing Fall 2026)
--- ══════════════════════════════════════════════
+-- semesters
 INSERT IGNORE INTO semesters (name, start_date, end_date, is_active) VALUES
 ('Spring 2025', '2025-01-15', '2025-05-31', 0),
 ('Summer 2025', '2025-06-01', '2025-08-15', 0),
 ('Fall 2025',   '2025-08-20', '2025-12-20', 0);
 
--- ══════════════════════════════════════════════
--- FACULTY (add 4 more to reach 10 total)
--- ══════════════════════════════════════════════
+-- faculty
 INSERT INTO users (username, password, role, is_active) VALUES
 ('f_ahmed',   '1234', 'faculty', 1),
 ('f_farooq',  '1234', 'faculty', 1),
@@ -28,9 +24,7 @@ INSERT INTO faculty (user_id, first_name, last_name, email, department, designat
 (@uid_yasmin,  'Ayesha', 'Yasmin',  'ayesha.yasmin@campus.edu', 'Business School',      'Assistant Professor'),
 (@uid_qureshi, 'Imran',  'Qureshi', 'imran.qureshi@campus.edu','Software Engineering', 'Associate Professor');
 
--- ══════════════════════════════════════════════
--- COURSES (add 6 more catalog courses)
--- ══════════════════════════════════════════════
+-- courses
 INSERT IGNORE INTO courses (course_code, course_name, credit_hours) VALUES
 ('CS301', 'Data Structures and Algorithms', 3),
 ('CS310', 'Operating Systems', 3),
@@ -39,9 +33,7 @@ INSERT IGNORE INTO courses (course_code, course_name, credit_hours) VALUES
 ('IT305', 'Network Security', 3),
 ('SE410', 'DevOps and CI/CD', 3);
 
--- ══════════════════════════════════════════════
--- STUDENTS (add 43 more to reach ~50 total)
--- ══════════════════════════════════════════════
+-- students
 INSERT INTO users (username, password, role, is_active) VALUES
 ('s_ali01','1234','student',1),('s_zara02','1234','student',1),
 ('s_ahmed03','1234','student',1),('s_sana04','1234','student',1),

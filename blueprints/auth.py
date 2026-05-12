@@ -1,3 +1,5 @@
+check_password = False
+
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from db_connector import execute_query
 from werkzeug.security import check_password_hash

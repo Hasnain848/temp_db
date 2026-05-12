@@ -1,17 +1,10 @@
 USE smart_campus;
 
--- ══════════════════════════════════════════════
--- COURSE SECTIONS (up to 3 sections per course per semester)
--- We need faculty IDs — fetch them dynamically
--- ══════════════════════════════════════════════
-
--- Get semester IDs
 SET @sem_sp25 = (SELECT semester_id FROM semesters WHERE name='Spring 2025');
 SET @sem_su25 = (SELECT semester_id FROM semesters WHERE name='Summer 2025');
 SET @sem_fa25 = (SELECT semester_id FROM semesters WHERE name='Fall 2025');
 SET @sem_fa26 = (SELECT semester_id FROM semesters WHERE name='Fall 2026');
 
--- Get faculty IDs
 SET @f_khan    = (SELECT faculty_id FROM faculty WHERE last_name='Khan' AND department='Computer Science' LIMIT 1);
 SET @f_mehmood = (SELECT faculty_id FROM faculty WHERE last_name='Mehmood' LIMIT 1);
 SET @f_rizvi   = (SELECT faculty_id FROM faculty WHERE last_name='Rizvi' LIMIT 1);
@@ -21,7 +14,6 @@ SET @f_farooq  = (SELECT faculty_id FROM faculty WHERE last_name='Farooq' LIMIT 
 SET @f_yasmin  = (SELECT faculty_id FROM faculty WHERE last_name='Yasmin' LIMIT 1);
 SET @f_qureshi = (SELECT faculty_id FROM faculty WHERE last_name='Qureshi' AND first_name='Imran' LIMIT 1);
 
--- Get course IDs
 SET @c_cs101 = (SELECT course_id FROM courses WHERE course_code='CS101');
 SET @c_cs205 = (SELECT course_id FROM courses WHERE course_code='CS205');
 SET @c_it220 = (SELECT course_id FROM courses WHERE course_code='IT220');
@@ -37,7 +29,6 @@ SET @c_mt201 = (SELECT course_id FROM courses WHERE course_code='MT201');
 SET @c_it305 = (SELECT course_id FROM courses WHERE course_code='IT305');
 SET @c_se410 = (SELECT course_id FROM courses WHERE course_code='SE410');
 
--- ── Spring 2025 sections (completed semester) ──
 INSERT IGNORE INTO course_sections (course_id, semester_id, faculty_id, section_code, max_capacity) VALUES
 (@c_cs101, @sem_sp25, @f_khan,    'A', 40),
 (@c_cs101, @sem_sp25, @f_farooq,  'B', 40),
@@ -48,7 +39,6 @@ INSERT IGNORE INTO course_sections (course_id, semester_id, faculty_id, section_
 (@c_se240, @sem_sp25, @f_nadeem,  'A', 35),
 (@c_it220, @sem_sp25, @f_mehmood, 'A', 35);
 
--- ── Fall 2025 sections (completed semester) ──
 INSERT IGNORE INTO course_sections (course_id, semester_id, faculty_id, section_code, max_capacity) VALUES
 (@c_cs301, @sem_fa25, @f_khan,    'A', 40),
 (@c_cs301, @sem_fa25, @f_farooq,  'B', 40),
@@ -62,7 +52,6 @@ INSERT IGNORE INTO course_sections (course_id, semester_id, faculty_id, section_
 (@c_it305, @sem_fa25, @f_mehmood, 'A', 35),
 (@c_se410, @sem_fa25, @f_nadeem,  'A', 30);
 
--- ── Fall 2026 sections (current active — add more sections to existing) ──
 INSERT IGNORE INTO course_sections (course_id, semester_id, faculty_id, section_code, max_capacity) VALUES
 (@c_cs101, @sem_fa26, @f_farooq,  'B', 40),
 (@c_cs101, @sem_fa26, @f_ahmed,   'C', 40),
